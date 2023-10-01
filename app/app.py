@@ -2,8 +2,8 @@ from fastapi import FastAPI
 from app.function_definitions import functions
 from app.functions import api_functions, create_pizzas
 from app.handler import OpenAIHandler
-from app.models import Interaction
-from app.db import Base, engine
+from app.models import Quiz
+#from app.db import Base, engine
 from app.prompts import system_message
 import os
 from app.store import create_store
@@ -13,7 +13,17 @@ app = FastAPI()
 handler = OpenAIHandler(api_functions, functions, system_message)
 
 
-@app.on_event("startup")
+@app.post("/v1/quiz")
+async def query_endpoint(quiz: Quiz):
+    #validate QuizInput against business rules
+    #preprocess text (clean it & split it)
+    #determine number of questions to generate from text
+    #call openai
+    return {"response": "success"}
+    #response = handler.send_response(interaction.query)
+    #return {"response": response}
+
+""" @app.on_event("startup")
 async def startup_event():
     Base.metadata.create_all(bind=engine)
     create_pizzas()
@@ -46,3 +56,4 @@ async def get_all_orders():
     orders = session.query(Order).all()
     session.close()
     return orders
+ """

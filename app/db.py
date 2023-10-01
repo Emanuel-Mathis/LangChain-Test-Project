@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, create_engine
+""" from sqlalchemy import Column, Integer, String, Float, ForeignKey, create_engine
 from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -39,3 +39,4 @@ class Review(Base):
 # Setting up the engine and session
 engine = create_engine("sqlite:///pizzadb.db")
 Session = sessionmaker(bind=engine)
+ """
