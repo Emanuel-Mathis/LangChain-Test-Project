@@ -1,5 +1,33 @@
 functions = [
     {
+        "name": "generate_question_answer_pairs",
+        "description": "Generate a question-answer pairs only based on the provided inputText",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "inputText": {
+                    "type": "string",
+                    "description": "The text from which question-answer pairs will be generated",
+                },
+            },
+            "required": ["inputText"],
+        },
+    },
+        {
+        "name": "generate_multiple_choice_answers",
+        "description": "Given question & answers, generate ",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "inputText": {
+                    "type": "string",
+                    "description": "The text from which question-answer pairs will be generated",
+                },
+            },
+            "required": ["inputText"],
+        },
+    },
+    {
         "name": "get_pizza_info",
         "description": "Get name and price of a pizza of the restaurant",
         "parameters": {

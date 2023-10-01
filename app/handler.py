@@ -4,7 +4,6 @@ import os
 import openai
 from dotenv import find_dotenv, load_dotenv
 
-
 class OpenAIHandler:
     def __init__(
         self,
@@ -36,6 +35,27 @@ class OpenAIHandler:
             functions=self.function_definitions,
         )
         message = response["choices"][0]["message"]
+        return message
+
+    def send_simple_message(self, query):
+        response = openai.ChatCompletion.create(
+            model=self.model,
+            messages=[
+                {"role": "user", "content": query}
+            ]
+        )
+        message = response["choices"][0]["message"]["content"]
+        return message
+
+    async def send_simple_message_async(self, system_message, query):
+        response = await openai.ChatCompletion.acreate(
+            model=self.model,
+            messages=[
+                {"role": "system", "content": system_message},
+                {"role": "user", "content": query}
+            ]
+        )
+        message = response["choices"][0]["message"]["content"]
         return message
 
     def process_function_call(self, message):
