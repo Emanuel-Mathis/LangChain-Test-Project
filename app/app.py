@@ -1,27 +1,108 @@
-from fastapi import FastAPI
-from app.function_definitions import functions
-from app.functions import api_functions, create_pizzas
-from app.handler import OpenAIHandler
+from fastapi import FastAPI, HTTPException
+#from app.function_definitions import functions
+#from app.functions import api_functions, create_pizzas
+from app.handler.openai_handler import OpenAIHandler
 from app.models import Quiz
+from app.utils.quiz_validation import QuizTypeValidation
 #from app.db import Base, engine
-from app.prompts import system_message
+from app.prompts import mcq_template
 import os
-from app.store import create_store
-from app.db import Session, Review, Order
+#from app.store import create_store
+#from app.db import Session, Review, Order
+import random
+import asyncio
+import json
+from app.handler.firebase_handler import FirebaseHandler
+
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+
+import sys
 
 app = FastAPI()
-handler = OpenAIHandler(api_functions, functions, system_message)
-
+handler = OpenAIHandler()
 
 @app.post("/v1/quiz")
 async def query_endpoint(quiz: Quiz):
     #validate QuizInput against business rules
-    #preprocess text (clean it & split it)
+    quiz_validation = QuizTypeValidation(quiz)
+    validation_response = quiz_validation.validate_request()
+    if (validation_response[0] != 200):
+        raise HTTPException(status_code=validation_response[0], detail=validation_response[1])
+
+    #determine data source
+    chunks = []
+    if (quiz.inputType.upper() == "TEXT"):
+        #preprocess text (clean it & split it)
+        input_text = quiz.input.strip()
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=1024,
+            chunk_overlap=32,  # number of tokens overlap between chunks
+            length_function=len,
+            separators=['\n\n', '\n', ' ', '']
+        )
+        chunks = text_splitter.split_text(input_text)
+    elif (quiz.inputType.upper() == "FIREBASEURL"):
+        firebase_handler = FirebaseHandler()
+        firebase_file_url = firebase_handler.retrieve_url_from_firebase_file_name(quiz.input)
+        file_content = firebase_handler.retrieve_from_url(firebase_file_url)
+        print("-- repsonse code")
+        print(file_content.status_code)
+        if (file_content.status_code != 200):
+            sys.exit()
+        input_text = file_content.text.strip()
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=1024,
+            chunk_overlap=32,  # number of tokens overlap between chunks
+            length_function=len,
+            separators=['\n\n', '\n', ' ', '']
+        )
+        chunks = text_splitter.split_text(input_text)
+
+    print("--")
+    print(len(chunks))
+    print(chunks)
+    print("--")
     #determine number of questions to generate from text
+    number_questions = quiz.numberQuestions or 10
+    chunk_length = len(chunks)
+    selected_chunks = []
+    number_questions_per_chunk = 1.0
+    if (chunk_length < number_questions):
+        #less chunks than number of questions means we need to increase the number of questions per chunk
+        number_questions_per_chunk = number_questions // chunk_length
+        selected_chunks = chunks
+        print("-- number questions")
+        print(number_questions_per_chunk)
+        print("--")
+    else:
+        #too many chunks means we need to select 
+        selected_chunks = random.sample(chunks, k=number_questions)
+        print("-- chunks")
+        print(selected_chunks)
+        print("--")
+
+    #prepare prompts
+    print("-- expected prompts")
+    print(chunk_length)
+    prompt_list = []
+
+    for chunk in selected_chunks:
+        variables = {"text": chunk, "number": int(number_questions_per_chunk), "difficulty": "medium"}
+        full_prompt = mcq_template.format(**variables)
+        prompt_list.append([{"role": "user", "content": full_prompt}])
+    print("-- actual prompts")
+    print(prompt_list)
     #call openai
-    return {"response": "success"}
-    #response = handler.send_response(interaction.query)
-    #return {"response": response}
+    temperature=0.1
+    response = await handler.send_prompt_openai_async(temperature, prompt_list)
+    merged_response = []
+    for i, x in enumerate(response):
+        print(f"Response {i}: {x['choices'][0]['message']['content']}\n\n")
+        merged_response.append(x['choices'][0]['message']['content'])
+    print("-- merged output")
+    print(merged_response)
+
+    return {"response": merged_response}
 
 """ @app.on_event("startup")
 async def startup_event():

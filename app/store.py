@@ -1,4 +1,4 @@
-import os
+""" import os
 
 from langchain.document_loaders import DirectoryLoader, TextLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -30,3 +30,4 @@ def get_vectorstore():
     with open("vectorstore.pkl", "rb") as f:
         vectorstore = pickle.load(f)
     return vectorstore
+ """
