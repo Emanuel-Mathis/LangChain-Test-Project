@@ -1,14 +1,9 @@
 from fastapi import FastAPI, HTTPException
-#from app.function_definitions import functions
-#from app.functions import api_functions, create_pizzas
 from app.handler.openai_handler import OpenAIHandler
 from app.models import Quiz
 from app.utils.quiz_validation import QuizTypeValidation
-#from app.db import Base, engine
 from app.prompts import mcq_template
 import os
-#from app.store import create_store
-#from app.db import Session, Review, Order
 import random
 import asyncio
 import json
