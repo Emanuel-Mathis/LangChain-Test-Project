@@ -14,7 +14,7 @@ Strictly respond in the following JSON format like in the following examples:
 Text: '{text}'
 """
 
-mcq_template = """
+mcq_template = """ \
 Text: {text} \
 You are an expert quiz maker helping students to learn the most important information quickly. \
 Given the above text, it is your job to create a quiz of {number} multiple choice questions with {difficulty} difficulty. \
