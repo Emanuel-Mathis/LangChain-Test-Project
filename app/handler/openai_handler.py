@@ -32,4 +32,4 @@ class OpenAIHandler:
         return await asyncio.gather(*async_responses)
 
     def run_openai_async(self, temperature: float, messages_list: list[list[dict[str,Any]]]):
-        return asyncio.run(self.send_prompt_openai_async(temperature, messages_list))
+        return asyncio.gather(self.send_prompt_openai_async(temperature, messages_list))
