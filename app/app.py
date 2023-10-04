@@ -112,6 +112,8 @@ async def query_endpoint(quiz: Quiz):
     handler_response = await handler.send_prompt_openai_async(temperature, prompt_list)
     #handler_response = asyncio.run(handler.send_prompt_openai_async(temperature, prompt_list))
     #handler_response = await handler.run_openai_async(temperature, prompt_list)
+    if (handler_response is None):
+        raise HTTPException(status_code=400, detail="No response from OpenAI")
     merged_response = []
     for i, x in enumerate(handler_response):
         print(f"Response {i}: {x['choices'][0]['message']['content']}\n\n")

@@ -20,16 +20,17 @@ class OpenAIHandler:
     async def send_prompt_openai_async(self, temperature: float, messages_list: list[list[dict[str,Any]]]):
         print("--messages list")
         print(messages_list)
-        async_responses = [
-            openai.ChatCompletion.acreate(
-                model=self.model,
-                messages=message,
-                temperature=temperature,
-                top_p=1.0,
-            )
-            for message in messages_list
-        ]
         try:
+            async_responses = [
+                openai.ChatCompletion.acreate(
+                    model=self.model,
+                    messages=message,
+                    temperature=temperature,
+                    top_p=1.0,
+                )
+                for message in messages_list
+            ]
+            
             return await asyncio.gather(*async_responses)
         except Exception as exc:
             print(exc)            
