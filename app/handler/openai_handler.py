@@ -29,7 +29,10 @@ class OpenAIHandler:
             )
             for message in messages_list
         ]
-        return await asyncio.gather(*async_responses)
+        try:
+            return await asyncio.gather(*async_responses)
+        except Exception as exc:
+            print(exc)            
 
     def run_openai_async(self, temperature: float, messages_list: list[list[dict[str,Any]]]):
         return asyncio.gather(self.send_prompt_openai_async(temperature, messages_list))
