@@ -109,9 +109,9 @@ async def query_endpoint(quiz: Quiz):
     print(prompt_list)
     #call openai
     temperature=0.1
-    #handler_response = await handler.send_prompt_openai_async(temperature, prompt_list)
+    handler_response = await handler.send_prompt_openai_async(temperature, prompt_list)
     #handler_response = asyncio.run(handler.send_prompt_openai_async(temperature, prompt_list))
-    handler_response = await handler.run_openai_async(temperature, prompt_list)
+    #handler_response = await handler.run_openai_async(temperature, prompt_list)
     merged_response = []
     for i, x in enumerate(handler_response):
         print(f"Response {i}: {x['choices'][0]['message']['content']}\n\n")
