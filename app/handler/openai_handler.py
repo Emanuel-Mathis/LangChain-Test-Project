@@ -18,6 +18,8 @@ class OpenAIHandler:
         self.model = model
     
     async def send_prompt_openai_async(self, temperature: float, messages_list: list[list[dict[str,Any]]]):
+        print("--messages list")
+        print(messages_list)
         async_responses = [
             openai.ChatCompletion.acreate(
                 model=self.model,
