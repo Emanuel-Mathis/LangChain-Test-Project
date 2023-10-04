@@ -15,24 +15,24 @@ Text: '{text}'
 """
 
 mcq_template = """
-Text: {text}
-You are an expert quiz maker helping students to learn the most important information quickly.
-Given the above text, it is your job to create a quiz of {number} multiple choice questions with {difficulty} difficulty.
-Make sure that questions are not repeated and check all the questions to be conforming to the text as well.
-Make sure to format your response like the example JSON format below and use it as a guide.
-Ensure to make the {number} MCQ(s).
-Strictly respond in the following JSON format:
-{{
-"mcq": "multiple choice question",
-"question-source": "Add the source text the question was generated from here",
-"options": {{
-    "a": "choice here",
-    "b": "choice here",
-    "c": "choice here",
-    "d": "choice here",
-}},
-"correct-answer": "correct answer reference",
-"correct-answer-explanation": "Explanation why the answer is correct by referencing the source it was generated from.",
-"correct-answer-hint": "Give a short but helpful indirect hint to the identify the correct answer without providing it directly.",
-}}
+Text: {text} \
+You are an expert quiz maker helping students to learn the most important information quickly. \
+Given the above text, it is your job to create a quiz of {number} multiple choice questions with {difficulty} difficulty. \
+Make sure that questions are not repeated and check all the questions to be conforming to the text as well. \
+Make sure to format your response like the example JSON format below and use it as a guide. \
+Ensure to make the {number} MCQ(s). \
+Strictly respond in the following JSON format: \
+{{ \
+"mcq": "multiple choice question", \
+"question-source": "Add the source text the question was generated from here", \
+"options": {{ \
+    "a": "choice here", \
+    "b": "choice here", \
+    "c": "choice here", \
+    "d": "choice here", \
+}}, \
+"correct-answer": "correct answer reference", \
+"correct-answer-explanation": "Explanation why the answer is correct by referencing the source it was generated from.", \
+"correct-answer-hint": "Give a short but helpful indirect hint to the identify the correct answer without providing it directly.", \
+}} \
 """
