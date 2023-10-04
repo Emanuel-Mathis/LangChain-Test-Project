@@ -3,6 +3,8 @@ from dotenv import find_dotenv, load_dotenv
 import os
 import requests
 import json
+import sys
+from fastapi import HTTPException
 
 class FirebaseHandler:
     def __init__(
@@ -31,8 +33,13 @@ class FirebaseHandler:
         self.storage = self.firebase.storage()
 
     def retrieve_from_url(self, url):
-        response = requests.get(url)
+        try:
+            response = requests.get(url)
+        except requests.exceptions.HTTPError as e:
+            print(e, file=sys.stderr)
+            raise HTTPException(status_code=requests.exceptions.HTTPError, detail="File request failed")
         return response
     
     def retrieve_url_from_firebase_file_name(self, file_name):
-        return self.storage.child(file_name).get_url(None)
+        response = self.storage.child(file_name).get_url(None)
+        return response
