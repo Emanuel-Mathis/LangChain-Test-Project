@@ -1,13 +1,17 @@
 from fastapi import FastAPI, HTTPException
 from app.handler.openai_handler import OpenAIHandler
 from app.models import Quiz
+from app.utils.pdf_text_extraction import PDFTextExtraction
 from app.utils.quiz_validation import QuizTypeValidation
+from app.utils.url_reader import get_pdf_from_raw_data
 from app.prompts import mcq_template
 import os
 import random
 import asyncio
 import json
 from app.handler.firebase_handler import FirebaseHandler
+from functools import cache
+import mimetypes
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
@@ -16,6 +20,7 @@ import sys
 app = FastAPI()
 handler = OpenAIHandler()
 
+@cache
 @app.post("/v1/quiz")
 async def query_endpoint(quiz: Quiz):
     #validate QuizInput against business rules
@@ -40,18 +45,33 @@ async def query_endpoint(quiz: Quiz):
         firebase_handler = FirebaseHandler()
         firebase_file_url = firebase_handler.retrieve_url_from_firebase_file_name(quiz.input)
         file_content = firebase_handler.retrieve_from_url(firebase_file_url)
+        file_extension_guess = file_content.headers['content-type']
+        file_extension = mimetypes.guess_extension(file_extension_guess)
         print("-- repsonse code")
         print(file_content.status_code)
-        if (file_content.status_code != 200):
-            sys.exit()
-        input_text = file_content.text.strip()
-        text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=1024,
-            chunk_overlap=32,  # number of tokens overlap between chunks
-            length_function=len,
-            separators=['\n\n', '\n', ' ', '']
-        )
-        chunks = text_splitter.split_text(input_text)
+        print("-- url")
+        print(firebase_file_url)
+        print(file_extension)
+        if (file_extension == ".pdf"):
+            pdf_doc = get_pdf_from_raw_data(file_content)
+            pte = PDFTextExtraction(pdf_doc)
+            content = pte.get_pdf_data()
+            text = ''
+            for page in content['elements']:
+                text = ' '.join(page['text'])
+                if len(text) > 200:
+                    chunks.append((text, page['page']))
+        elif (file_extension == ".txt"):
+            input_text = file_content.text.strip()
+            text_splitter = RecursiveCharacterTextSplitter(
+                chunk_size=1024,
+                chunk_overlap=32,  # number of tokens overlap between chunks
+                length_function=len,
+                separators=['\n\n', '\n', ' ', '']
+            )
+            chunks = text_splitter.split_text(input_text)
+        else:
+            raise HTTPException(status_code=400, detail="File type not supported!")
 
     print("--")
     print(len(chunks))
@@ -89,9 +109,11 @@ async def query_endpoint(quiz: Quiz):
     print(prompt_list)
     #call openai
     temperature=0.1
-    response = await handler.send_prompt_openai_async(temperature, prompt_list)
+    handler_response = await handler.send_prompt_openai_async(temperature, prompt_list)
+    #handler_response = asyncio.run(handler.send_prompt_openai_async(temperature, prompt_list))
+    #handler_response = await handler.run_openai_async(temperature, prompt_list)
     merged_response = []
-    for i, x in enumerate(response):
+    for i, x in enumerate(handler_response):
         print(f"Response {i}: {x['choices'][0]['message']['content']}\n\n")
         merged_response.append(x['choices'][0]['message']['content'])
     print("-- merged output")
