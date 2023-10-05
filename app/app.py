@@ -1,10 +1,10 @@
 from fastapi import FastAPI, HTTPException
 from app.handler.openai_handler import OpenAIHandler
-from app.models import Quiz
+from app.models import Quiz, QuizRequest
 from app.utils.pdf_text_extraction import PDFTextExtraction
 from app.utils.quiz_validation import QuizTypeValidation
 from app.utils.url_reader import get_pdf_from_raw_data
-from app.prompts import mcq_template
+from app.prompts import mcq_template, quizbot_text_template
 import os
 import random
 import asyncio
@@ -20,20 +20,24 @@ import sys
 app = FastAPI()
 handler = OpenAIHandler()
 
+@app.get("/")
+async def root():
+    return {"message": "We are live!"}
+
 @cache
-@app.post("/v1/quiz")
-async def query_endpoint(quiz: Quiz):
+@app.post("/v1/testudy")
+async def query_endpoint(quizRequest: QuizRequest):
     #validate QuizInput against business rules
-    quiz_validation = QuizTypeValidation(quiz)
-    validation_response = quiz_validation.validate_request()
+    quiz_validation = QuizTypeValidation(quizRequest)
+    validation_response = quiz_validation.testudy_validate_request()
     if (validation_response[0] != 200):
         raise HTTPException(status_code=validation_response[0], detail=validation_response[1])
 
     #determine data source
     chunks = []
-    if (quiz.inputType.upper() == "TEXT"):
+    if (quizRequest.inputType.upper() == "TEXT"):
         #preprocess text (clean it & split it)
-        input_text = quiz.input.strip()
+        input_text = quizRequest.input.strip()
         text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=1024,
             chunk_overlap=32,  # number of tokens overlap between chunks
@@ -41,9 +45,9 @@ async def query_endpoint(quiz: Quiz):
             separators=['\n\n', '\n', ' ', '']
         )
         chunks = text_splitter.split_text(input_text)
-    elif (quiz.inputType.upper() == "FIREBASEURL"):
+    elif (quizRequest.inputType.upper() == "FIREBASEURL"):
         firebase_handler = FirebaseHandler()
-        firebase_file_url = firebase_handler.retrieve_url_from_firebase_file_name(quiz.input)
+        firebase_file_url = firebase_handler.retrieve_url_from_firebase_file_name(quizRequest.input)
         file_content = firebase_handler.retrieve_from_url(firebase_file_url)
         file_extension_guess = file_content.headers['content-type']
         file_extension = mimetypes.guess_extension(file_extension_guess)
@@ -78,7 +82,7 @@ async def query_endpoint(quiz: Quiz):
     print(chunks)
     print("--")
     #determine number of questions to generate from text
-    number_questions = quiz.numberQuestions or 10
+    number_questions = quizRequest.quizOptions.numberQuestions or 10
     chunk_length = len(chunks)
     selected_chunks = []
     number_questions_per_chunk = 1.0
@@ -120,8 +124,80 @@ async def query_endpoint(quiz: Quiz):
         merged_response.append(x['choices'][0]['message']['content'])
     print("-- merged output")
     print(merged_response)
+    json_response = json.loads(merged_response[0])
 
-    return {"response": merged_response}
+    return {"response": json_response}
+
+#@cache
+@app.post("/v1/quizbot")
+async def query_endpoint(quizRequest: QuizRequest):
+
+    #validate QuizInput against business rules
+    quiz_validation = QuizTypeValidation(quizRequest)
+    validation_response = quiz_validation.quizbot_validate_request()
+    if (validation_response[0] != 200):
+        raise HTTPException(status_code=validation_response[0], detail=validation_response[1])
+    
+    #determine data source
+    chunks = []
+    if (quizRequest.inputType.upper() == "TEXT"):
+        #preprocess text (clean it & split it)
+        input_text = quizRequest.input.strip()
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=1024,
+            chunk_overlap=32,  # number of tokens overlap between chunks
+            length_function=len,
+            separators=['\n\n', '\n', ' ', '']
+        )
+        chunks = text_splitter.split_text(input_text)
+
+    print("--")
+    print(len(chunks))
+    print(chunks)
+    print("--")
+    #determine number of questions to generate from text
+    number_questions = quizRequest.quizOptions.numberQuestions or 10
+    chunk_length = len(chunks)
+    selected_chunks = []
+    number_questions_per_chunk = 1.0
+    if (chunk_length < number_questions):
+        #less chunks than number of questions means we need to increase the number of questions per chunk
+        number_questions_per_chunk = number_questions // chunk_length
+        selected_chunks = chunks
+        print("-- number questions")
+        print(number_questions_per_chunk)
+        print("--")
+    else:
+        #too many chunks means we need to select 
+        selected_chunks = random.sample(chunks, k=number_questions)
+        print("-- chunks")
+        print(selected_chunks)
+        print("--")
+
+    #prepare prompts
+    print("-- expected prompts")
+    print(chunk_length)
+    prompt_list = []
+
+    for chunk in selected_chunks:
+        variables = {"text": chunk, "tone": quizRequest.quizOptions.tone, "number": int(number_questions_per_chunk), "difficulty": "medium"}
+        full_prompt = quizbot_text_template.format(**variables)
+        prompt_list.append([{"role": "user", "content": full_prompt}])
+    print("-- actual prompts")
+    print(prompt_list)
+    #call openai
+    temperature=0.1
+    handler_response = await handler.send_prompt_openai_async(temperature, prompt_list)
+    if (handler_response is None):
+        raise HTTPException(status_code=400, detail="No response from OpenAI")
+    merged_response = []
+    for i, x in enumerate(handler_response):
+        print(f"Response {i}: {x['choices'][0]['message']['content']}\n\n")
+        merged_response.append(x['choices'][0]['message']['content'])
+    print("-- merged output")
+    print(merged_response)
+    json_response = json.loads(merged_response[0])
+    return {"response": json_response}
 
 """ @app.on_event("startup")
 async def startup_event():
