@@ -118,15 +118,27 @@ async def query_endpoint(quizRequest: QuizRequest):
     #handler_response = await handler.run_openai_async(temperature, prompt_list)
     if (handler_response is None):
         raise HTTPException(status_code=400, detail="No response from OpenAI")
-    merged_response = []
+    generated_value = ""
     for i, x in enumerate(handler_response):
         print(f"Response {i}: {x['choices'][0]['message']['content']}\n\n")
+        #json_response.extend(x['choices'][0]['message']['content'])
+        generated_value += x["choices"][0]['message']['content']
+        if i != len(handler_response) - 1:
+            generated_value += ", "
+
+    print(generated_value)
+    return {"response": generated_value}
+"""    
+    merged_response = []
+ 
+    for i, x in enumerate(handler_response):
+        print(f"Response Test {i}: {x['choices'][0]['message']['content']}\n\n")
         merged_response.append(x['choices'][0]['message']['content'])
     print("-- merged output")
     print(merged_response)
-    json_response = json.loads(merged_response[0])
+    json_response = json.loads(merged_response) """
 
-    return {"response": json_response}
+
 
 #@cache
 @app.post("/v1/quizbot")
@@ -191,13 +203,17 @@ async def query_endpoint(quizRequest: QuizRequest):
     if (handler_response is None):
         raise HTTPException(status_code=400, detail="No response from OpenAI")
     merged_response = []
+    #test_response = {}
+    generated_value = ""
     for i, x in enumerate(handler_response):
         print(f"Response {i}: {x['choices'][0]['message']['content']}\n\n")
-        merged_response.append(x['choices'][0]['message']['content'])
-    print("-- merged output")
-    print(merged_response)
-    json_response = json.loads(merged_response[0])
-    return {"response": json_response}
+        #json_response.extend(x['choices'][0]['message']['content'])
+        generated_value += x["choices"][0]['message']['content']
+        if i != len(handler_response) - 1:
+            generated_value += ", "
+
+    print(generated_value)
+    return {"response": generated_value}
 
 """ @app.on_event("startup")
 async def startup_event():
