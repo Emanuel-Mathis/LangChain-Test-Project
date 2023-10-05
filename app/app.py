@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from app.handler.openai_handler import OpenAIHandler
 from app.models import Quiz, QuizRequest
 from app.utils.pdf_text_extraction import PDFTextExtraction
@@ -127,7 +127,8 @@ async def query_endpoint(quizRequest: QuizRequest):
             generated_value += ", "
 
     print(generated_value)
-    return {"response": generated_value}
+    #json_compatible_item_data = jsonable_encoder(generated_value)
+    return Response(content=generated_value, media_type="application/json")
 """    
     merged_response = []
  
@@ -140,7 +141,7 @@ async def query_endpoint(quizRequest: QuizRequest):
 
 
 
-#@cache
+@cache
 @app.post("/v1/quizbot")
 async def query_endpoint(quizRequest: QuizRequest):
 
@@ -213,7 +214,7 @@ async def query_endpoint(quizRequest: QuizRequest):
             generated_value += ", "
 
     print(generated_value)
-    return {"response": generated_value}
+    return Response(content=generated_value, media_type="application/json")
 
 """ @app.on_event("startup")
 async def startup_event():
