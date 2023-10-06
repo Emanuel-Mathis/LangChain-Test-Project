@@ -1,10 +1,11 @@
 from fastapi import FastAPI, HTTPException, Response
 from app.handler.openai_handler import OpenAIHandler
-from app.models import Quiz, QuizRequest
+from app.models import QuizRequest
 from app.utils.pdf_text_extraction import PDFTextExtraction
 from app.utils.quiz_validation import QuizTypeValidation
 from app.utils.url_reader import get_pdf_from_raw_data
-from app.prompts import mcq_template, quizbot_text_template
+from app.prompts import quiz_text_template
+from app.utils.topic_extraction import TopicExtraction
 import os
 import random
 import asyncio
@@ -51,11 +52,6 @@ async def query_endpoint(quizRequest: QuizRequest):
         file_content = firebase_handler.retrieve_from_url(firebase_file_url)
         file_extension_guess = file_content.headers['content-type']
         file_extension = mimetypes.guess_extension(file_extension_guess)
-        print("-- repsonse code")
-        print(file_content.status_code)
-        print("-- url")
-        print(firebase_file_url)
-        print(file_extension)
         if (file_extension == ".pdf"):
             pdf_doc = get_pdf_from_raw_data(file_content)
             pte = PDFTextExtraction(pdf_doc)
@@ -76,11 +72,17 @@ async def query_endpoint(quizRequest: QuizRequest):
             chunks = text_splitter.split_text(input_text)
         else:
             raise HTTPException(status_code=400, detail="File type not supported!")
+    elif (quizRequest.inputType.upper() == "TOPIC"):
+        get_topics = TopicExtraction()
+        retrieved_data = get_topics.run_topic_agent(quizRequest.input)
+        text_splitter = RecursiveCharacterTextSplitter(
+                chunk_size=1024,
+                chunk_overlap=32,  # number of tokens overlap between chunks
+                length_function=len,
+                separators=['\n\n', '\n', ' ', '']
+            )
+        chunks = text_splitter.split_text(retrieved_data)
 
-    print("--")
-    print(len(chunks))
-    print(chunks)
-    print("--")
     #determine number of questions to generate from text
     number_questions = quizRequest.quizOptions.numberQuestions or 10
     chunk_length = len(chunks)
@@ -90,56 +92,38 @@ async def query_endpoint(quizRequest: QuizRequest):
         #less chunks than number of questions means we need to increase the number of questions per chunk
         number_questions_per_chunk = number_questions // chunk_length
         selected_chunks = chunks
-        print("-- number questions")
-        print(number_questions_per_chunk)
-        print("--")
     else:
         #too many chunks means we need to select 
         selected_chunks = random.sample(chunks, k=number_questions)
-        print("-- chunks")
-        print(selected_chunks)
-        print("--")
 
+    print(seelcted_chunks)
     #prepare prompts
-    print("-- expected prompts")
-    print(chunk_length)
     prompt_list = []
 
     for chunk in selected_chunks:
-        variables = {"text": chunk, "number": int(number_questions_per_chunk), "difficulty": "medium"}
-        full_prompt = mcq_template.format(**variables)
+        variables = {"text": chunk, \
+                    "systemInstruction": quizRequest.quizOptions.systemInstruction, \
+                    "customInstruction": quizRequest.quizOptions.systemInstruction, \
+                    "tone": quizRequest.quizOptions.tone, \
+                    "number": int(number_questions_per_chunk), \
+                    "type": quizRequest.quizOptions.type, \
+                    "difficulty": quizRequest.quizOptions.difficulty, \
+                    }
+        full_prompt = quiz_text_template.format(**variables)
         prompt_list.append([{"role": "user", "content": full_prompt}])
-    print("-- actual prompts")
-    print(prompt_list)
     #call openai
     temperature=0.1
     handler_response = await handler.send_prompt_openai_async(temperature, prompt_list)
-    #handler_response = asyncio.run(handler.send_prompt_openai_async(temperature, prompt_list))
-    #handler_response = await handler.run_openai_async(temperature, prompt_list)
     if (handler_response is None):
         raise HTTPException(status_code=400, detail="No response from OpenAI")
     generated_value = ""
     for i, x in enumerate(handler_response):
-        print(f"Response {i}: {x['choices'][0]['message']['content']}\n\n")
         #json_response.extend(x['choices'][0]['message']['content'])
         generated_value += x["choices"][0]['message']['content']
         if i != len(handler_response) - 1:
             generated_value += ", "
 
-    print(generated_value)
-    #json_compatible_item_data = jsonable_encoder(generated_value)
     return Response(content=generated_value, media_type="application/json")
-"""    
-    merged_response = []
- 
-    for i, x in enumerate(handler_response):
-        print(f"Response Test {i}: {x['choices'][0]['message']['content']}\n\n")
-        merged_response.append(x['choices'][0]['message']['content'])
-    print("-- merged output")
-    print(merged_response)
-    json_response = json.loads(merged_response) """
-
-
 
 @cache
 @app.post("/v1/quizbot")
@@ -164,10 +148,6 @@ async def query_endpoint(quizRequest: QuizRequest):
         )
         chunks = text_splitter.split_text(input_text)
 
-    print("--")
-    print(len(chunks))
-    print(chunks)
-    print("--")
     #determine number of questions to generate from text
     number_questions = quizRequest.quizOptions.numberQuestions or 10
     chunk_length = len(chunks)
@@ -177,27 +157,23 @@ async def query_endpoint(quizRequest: QuizRequest):
         #less chunks than number of questions means we need to increase the number of questions per chunk
         number_questions_per_chunk = number_questions // chunk_length
         selected_chunks = chunks
-        print("-- number questions")
-        print(number_questions_per_chunk)
-        print("--")
     else:
         #too many chunks means we need to select 
         selected_chunks = random.sample(chunks, k=number_questions)
-        print("-- chunks")
-        print(selected_chunks)
-        print("--")
 
     #prepare prompts
-    print("-- expected prompts")
-    print(chunk_length)
     prompt_list = []
-
     for chunk in selected_chunks:
-        variables = {"text": chunk, "tone": quizRequest.quizOptions.tone, "number": int(number_questions_per_chunk), "difficulty": "medium"}
-        full_prompt = quizbot_text_template.format(**variables)
+        variables = {"text": chunk, \
+                    "systemInstruction": quizRequest.quizOptions.systemInstruction, \
+                    "customInstruction": quizRequest.quizOptions.systemInstruction, \
+                    "tone": quizRequest.quizOptions.tone, \
+                    "number": int(number_questions_per_chunk), \
+                    "type": quizRequest.quizOptions.type, \
+                    "difficulty": quizRequest.quizOptions.difficulty, \
+                    }
+        full_prompt = quiz_text_template.format(**variables)
         prompt_list.append([{"role": "user", "content": full_prompt}])
-    print("-- actual prompts")
-    print(prompt_list)
     #call openai
     temperature=0.1
     handler_response = await handler.send_prompt_openai_async(temperature, prompt_list)
@@ -207,13 +183,11 @@ async def query_endpoint(quizRequest: QuizRequest):
     #test_response = {}
     generated_value = ""
     for i, x in enumerate(handler_response):
-        print(f"Response {i}: {x['choices'][0]['message']['content']}\n\n")
         #json_response.extend(x['choices'][0]['message']['content'])
         generated_value += x["choices"][0]['message']['content']
         if i != len(handler_response) - 1:
             generated_value += ", "
 
-    print(generated_value)
     return Response(content=generated_value, media_type="application/json")
 
 """ @app.on_event("startup")

@@ -16,8 +16,8 @@ class QuizTypeValidation:
             response = (400, 'Input must be more than 10 characters')
             return response
 
-        if (self.quiz.inputType.upper() != 'TEXT' and self.quiz.inputType.upper() != 'FIREBASEURL'):
-            response = (400, 'Only Text or FirebaseURL as input type supported!')
+        if (self.quiz.inputType.upper() != 'TEXT' and self.quiz.inputType.upper() != 'FIREBASEURL'and self.quiz.inputType.upper() != 'TOPIC'):
+            response = (400, 'Input type not supported!')
             return response
 
         if (self.quiz.quizType.upper() != 'MCQ'):
@@ -37,8 +37,8 @@ class QuizTypeValidation:
             response = (400, 'Input must be more than 10 characters')
             return response
 
-        if (self.quiz.inputType.upper() != 'TEXT' and self.quiz.inputType.upper() != 'FIREBASEURL'):
-            response = (400, 'Only Text as input type supported!')
+        if (self.quiz.inputType.upper() != 'TEXT' and self.quiz.inputType.upper() != 'FIREBASEURL'and self.quiz.inputType.upper() != 'TOPIC'):
+            response = (400, 'Input type not supported!')
             return response
 
         if (self.quiz.quizType.upper() != 'MCQ'):

@@ -1,7 +1,8 @@
-quizbot_text_template = """\
-Text: {text} \
-You are {tone} helping students to learn the most important information quickly. \
-Given the above text, it is your job to create a quiz of {number} multiple choice questions with {difficulty} difficulty. \
+quiz_text_template = """\
+Text: {text}
+
+You are a {systemInstruction} helping {customInstruction} in {tone} style. \
+Given the above text, it is your job to create a quiz of {number} {type} that are {difficulty} difficult to guess. \
 Make sure that questions are not repeated and check all the questions to be conforming to the text as well. \
 Make sure to format your response like the example JSON format below and use it as a guide. \
 Ensure to make the {number} MCQ(s). \
@@ -16,11 +17,11 @@ Strictly respond in the following JSON format: \
 }}, \
 "correct-answer": "correct answer reference", \
 "correct-answer-explanation": "Give a explanation why the answer is correct by referencing the source it was generated from.", \
-"correct-answer-hint": "Give a short but helpful indirect hint to the identify the correct answer without providing it directly.", \
+"correct-answer-hint": "Give a short, not easily guessable hint to help identify the correct answer without providing the answer directly.", \
 }} \
 """
 
-mcq_template = """ \
+old_mcq_template = """ \
 Text: {text} \
 You are an expert quiz maker helping students to learn the most important information quickly. \
 Given the above text, it is your job to create a quiz of {number} multiple choice questions with {difficulty} difficulty. \
@@ -30,7 +31,7 @@ Ensure to make the {number} MCQ(s). \
 Strictly respond in the following JSON format: \
 {{ \
 "mcq": "multiple choice question", \
-"question-source": "Write the sentence of the source text the question was generated from here", \
+"question-source": "For the correct answer, write source text the question was generated from", \
 "options": {{ \
     "a": "choice here", \
     "b": "choice here", \
