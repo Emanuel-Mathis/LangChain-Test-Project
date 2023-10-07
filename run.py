@@ -13,6 +13,8 @@ subprocess.run(
         "-e",
         f"OPENAI_API_KEY={os.getenv('OPENAI_API_KEY')}",
         "-p",
+        "-v",
+        "${pwd}:/app"
         "5567:5567",
         "aiapp",
     ]
