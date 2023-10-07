@@ -8,7 +8,7 @@ from typing import Any
 class OpenAIHandler:
     def __init__(
         self,
-        model="gpt-3.5-turbo-0613",
+        model="gpt-3.5-turbo",
     ):
         load_dotenv(find_dotenv())
         openai.api_key = os.environ.get("OPENAI_API_KEY")

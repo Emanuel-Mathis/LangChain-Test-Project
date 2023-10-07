@@ -15,6 +15,7 @@ from functools import cache
 import mimetypes
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+from app.handler.langchain_chain_handler import LangchainChainHandler
 
 import sys
 
@@ -96,11 +97,28 @@ async def query_endpoint(quizRequest: QuizRequest):
         #too many chunks means we need to select 
         selected_chunks = random.sample(chunks, k=number_questions)
 
-    print(seelcted_chunks)
+    print(selected_chunks)
     #prepare prompts
     prompt_list = []
+### new implementation
+    langchain_handler = LangchainChainHandler()
+    handler_response = await langchain_handler.generate_concurrently(selected_chunks)
+    print(handler_response)
+    response_list = {'body':[]}
+    for response in handler_response:
+        single_response = json.loads(response)
+        response_list['body'].append(single_response)
 
+    final_response = json.dumps(response_list)
+    return Response(content=final_response, media_type="application/json")  
+"""     langchain_handler = LangchainChainHandler()
     for chunk in selected_chunks:
+        print(langchain_handler.get_mcqs_from_chunk(chunk, 1.0, difficulty="medium"))
+
+    return Response(content="success", media_type="application/json") """
+
+### past implementation
+"""     for chunk in selected_chunks:
         variables = {"text": chunk, \
                     "systemInstruction": quizRequest.quizOptions.systemInstruction, \
                     "customInstruction": quizRequest.quizOptions.systemInstruction, \
@@ -123,7 +141,7 @@ async def query_endpoint(quizRequest: QuizRequest):
         if i != len(handler_response) - 1:
             generated_value += ", "
 
-    return Response(content=generated_value, media_type="application/json")
+    return Response(content=generated_value, media_type="application/json") """
 
 @cache
 @app.post("/v1/quizbot")
