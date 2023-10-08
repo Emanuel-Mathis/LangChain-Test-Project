@@ -6,6 +6,7 @@ from app.utils.quiz_validation import QuizTypeValidation
 from app.utils.url_reader import get_pdf_from_raw_data
 from app.prompts import quiz_text_template
 from app.utils.topic_extraction import TopicExtraction
+from app.utils.url_to_text import url_to_text
 import os
 import random
 import asyncio
@@ -82,7 +83,18 @@ async def query_endpoint(quizRequest: QuizRequest):
                 length_function=len,
                 separators=['\n\n', '\n', ' ', '']
             )
-        chunks = text_splitter.split_text(retrieved_data)
+        chunks = text_splitter.split_text(retrieved_data.strip())
+    elif(quizRequest.inputType.upper() == "URL"):
+        get_url_text = url_to_text(quizRequest.input)
+        if (get_url_text.strip()):
+            raise HTTPException(status_code=400, detail="File type not supported!")
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=1024,
+            chunk_overlap=32,  # number of tokens overlap between chunks
+            length_function=len,
+            separators=['\n\n', '\n', ' ', '']
+        )
+        get_url_text
 
     #determine number of questions to generate from text
     number_questions = quizRequest.quizOptions.numberQuestions or 10

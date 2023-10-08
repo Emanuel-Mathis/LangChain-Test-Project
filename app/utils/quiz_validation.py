@@ -37,7 +37,7 @@ class QuizTypeValidation:
             response = (400, 'Input must be more than 10 characters')
             return response
 
-        if (self.quiz.inputType.upper() != 'TEXT' and self.quiz.inputType.upper() != 'FIREBASEURL'and self.quiz.inputType.upper() != 'TOPIC'):
+        if (self.quiz.inputType.upper() != 'TEXT' and self.quiz.inputType.upper() != 'URL' and self.quiz.inputType.upper() != 'FIREBASEURL'and self.quiz.inputType.upper() != 'TOPIC'):
             response = (400, 'Input type not supported!')
             return response
 

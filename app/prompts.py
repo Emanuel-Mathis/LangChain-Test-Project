@@ -78,3 +78,15 @@ Strictly respond in the following JSON format: \
 "correct-answer-hint": "Give a short but helpful indirect hint to the identify the correct answer without providing it directly.", \
 }} \
 """
+
+test_template ="""
+Create a 1 question multiple choice quiz for module in an undergraduate {topic} (biology course covering sensation, perception & adaptaion)
+
+Create three plausible but incorrect answers for the question, adhering to the guidelines provided:
+These incorrect answers must closely resemble the correct answer in length and writing quality but provide misleading information about the primary purpose of the question & answer.
+Use the following guidelines:
+1. The wrong answers should be answers that get commonly confused with the correct answer
+2. The wrong answers should be derived from the same topic or area of expertise
+3. The wrong answers should be of similar length & writing quality as the correct answer
+4. THe wrong answers 
+"""
