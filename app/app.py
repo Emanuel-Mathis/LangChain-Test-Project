@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, Response
+from fastapi.middleware.cors import CORSMiddleware
 from app.handler.openai_handler import OpenAIHandler
 from app.models import QuizRequest
 from app.utils.pdf_text_extraction import PDFTextExtraction
@@ -21,6 +22,17 @@ from app.handler.langchain_chain_handler import LangchainChainHandler
 import sys
 
 app = FastAPI()
+
+origins = ["*"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 handler = OpenAIHandler()
 
 @app.get("/")
